@@ -2,7 +2,7 @@
 
 setlocal EnableDelayedExpansion
 
-if not exist OpenXR-SDK\NUL (
+if not exist OpenXR-SDK (
    git clone https://github.com/KhronosGroup/OpenXR-SDK.git
 )
 
