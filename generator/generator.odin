@@ -302,7 +302,7 @@ get_enum_extensions :: proc(doc: ^xml.Document, el: xml.Element) -> (ext_map: ma
 // Finds extended enum values from a single <extension> element
 get_enum_extension :: proc(doc: ^xml.Document, el: xml.Element, ext_map: ^map[string][dynamic]Extended_Enum) {
     ext_number, ok := strconv.parse_int(el_get_attrib(el, "number"), 10)
-    assert(ok)
+    assert(ok,"operation failed unexpectedly")
 
     // Find the require element
     require_element_id: xml.Element_ID
@@ -330,7 +330,7 @@ get_enum_extension :: proc(doc: ^xml.Document, el: xml.Element, ext_map: ^map[st
 
             name := el_get_attrib(child_el, "name")
             offset, pok := strconv.parse_int(el_get_attrib(child_el, "offset"), 10)
-            assert(pok)
+            assert(pok,"expected condition: pok")
 
             if extends not_in ext_map {
                 ext_map[extends] = make([dynamic]Extended_Enum, 0)
