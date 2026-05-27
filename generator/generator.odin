@@ -1244,7 +1244,13 @@ when ODIN_OS == .Windows {
 } else when ODIN_OS == .Darwin {
     foreign import openxr_loader "libopenxr_loader.dylib"
 } else when ODIN_OS == .Linux {
-    foreign import openxr_loader "libopenxr_loader.so"
+    when ODIN_ARCH == .amd64 {
+        foreign import openxr_loader "linux_x64/libopenxr_loader.so"
+    } else when ODIN_ARCH == .arm64 {
+        foreign import openxr_loader "linux_arm64/libopenxr_loader.so"
+    } else {
+        #panic("vendor/xr supports only linux amd64/arm64")
+    }
 }
 // Link just the proc address loader
 foreign openxr_loader {
