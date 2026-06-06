@@ -13,7 +13,49 @@ import "core:strconv"
 import "core:strings"
 
 
-KNOWN_SUFFIXES :: [?]string{"KHR", "EXT", "FB", "MSFT", "HTC", "META", "ULTRALEAP", "EXTX", "ALMALENCE"}
+KNOWN_SUFFIXES :: [?]string{
+    "ALMALENCE",
+    "ANDROIDSYS",
+    "COLLABORA",
+    "DANWILLM",
+    "DEEPMIRROR",
+    "FREDEMMOTT",
+    "HOLOLIGHT",
+    "LOGITECH",
+    "STARBREEZE",
+    "ULTRALEAP",
+    "ANDROID",
+    "HUAWEI",
+    "LUNARG",
+    "OCULUS",
+    "PLUTO",
+    "QCOM",
+    "SONY",
+    "TOBII",
+    "UNITY",
+    "VALVE",
+    "VARJO",
+    "ACER",
+    "ARM",
+    "BD",
+    "EPIC",
+    "EXT",
+    "EXTX",
+    "FB",
+    "HTC",
+    "KHR",
+    "LEIA",
+    "LIV",
+    "META",
+    "ML",
+    "MND",
+    "MSFT",
+    "NV",
+    "OPPO",
+    "PICO",
+    "RZR",
+    "YVR",
+}
 
 
 main :: proc() {
@@ -97,7 +139,10 @@ gen_core_odin :: proc(doc: ^xml.Document) {
         }
     }
 
-    os.write_entire_file("core.odin", builder.buf[:])
+    err := os.write_entire_file("core.odin", builder.buf[:])
+    if err != nil {
+        log.panic("Failed to write core.odin")
+    }
 }
 
 // Generates odin constants from the "API Constants" <enums> element
@@ -283,7 +328,10 @@ gen_enums_odin :: proc(doc: ^xml.Document) {
     }
 
 
-    os.write_entire_file("enums.odin", builder.buf[:])
+    err := os.write_entire_file("enums.odin", builder.buf[:])
+    if err != nil {
+        log.panic("Failed to write enums.odin")
+    }
 }
 
 // Builds a map of extended enum values from the <extensions> element
@@ -575,6 +623,7 @@ gen_enums_type :: proc(builder: ^strings.Builder, doc: ^xml.Document, el: xml.El
 TYPE_ALIASES := map[string]string {
     "float"    = "f32",
     "double"   = "f64",
+    "size_t"   = "c.size_t",
     "int8_t"   = "i8",
     "int16_t"  = "i16",
     "int32_t"  = "i32",
@@ -621,7 +670,10 @@ gen_structs_odin :: proc(doc: ^xml.Document) {
         }
     }
 
-    os.write_entire_file("structs.odin", builder.buf[:])
+    err := os.write_entire_file("structs.odin", builder.buf[:])
+    if err != nil {
+        log.panic("Failed to write structs.odin")
+    }
 }
 
 // Generates struct declaration code from the <types> element
@@ -819,7 +871,10 @@ gen_procedures_odin :: proc(doc: ^xml.Document) {
         }
     }
 
-    os.write_entire_file("procedures.odin", builder.buf[:])
+    err := os.write_entire_file("procedures.odin", builder.buf[:])
+    if err != nil {
+        log.panic("Failed to write procedures.odin")
+    }
 }
 
 gen_procedures :: proc(builder: ^strings.Builder, doc: ^xml.Document, el: xml.Element) {
@@ -1081,7 +1136,10 @@ gen_loader_odin :: proc(doc: ^xml.Document) {
     gen_base_loader(&builder, doc)
     gen_instance_loader(&builder, doc)
 
-    os.write_entire_file("loader.odin", builder.buf[:])
+    err := os.write_entire_file("loader.odin", builder.buf[:])
+    if err != nil {
+        log.panic("Failed to write loader.odin")
+    }
 }
 
 gen_base_loader :: proc(builder: ^strings.Builder, doc: ^xml.Document) {
@@ -1175,45 +1233,45 @@ import "core:c"
 
 // Vulkan Types
 import vk "vendor:vulkan"
+import win32 "core:sys/windows"
+import D3D11 "vendor:directx/d3d11"
+import D3D12 "vendor:directx/d3d12"
 
 // OpenGL Types
 EGLenum :: c.int
 
 // Windows specific OS / API types
 when ODIN_OS == .Windows {
-	import win32 "core:sys/windows"
-        HDC :: win32.HDC
-        HGLRC :: win32.HGLRC
+	HDC :: win32.HDC
+	HGLRC :: win32.HGLRC
 	LUID  :: win32.LUID
-        IUnknown :: win32.IUnknown
+	IUnknown :: win32.IUnknown
 
-        D3D_FEATURE_LEVEL :: c.int
+	D3D_FEATURE_LEVEL :: c.int
 
-        import D3D11 "vendor:directx/d3d11"
-        ID3D11Device :: D3D11.IDevice
-        ID3D11Texture2D :: D3D11.ITexture2D
-        
-        import D3D12 "vendor:directx/d3d12"
-        ID3D12Device :: D3D12.IDevice
-        ID3D12CommandQueue :: D3D12.ICommandQueue
-        ID3D12Resource :: D3D12.IResource
+	ID3D11Device :: D3D11.IDevice
+	ID3D11Texture2D :: D3D11.ITexture2D
+
+	ID3D12Device :: D3D12.IDevice
+	ID3D12CommandQueue :: D3D12.ICommandQueue
+	ID3D12Resource :: D3D12.IResource
 } else {
-        HDC :: distinct rawptr
-        HGLRC :: distinct rawptr
+	HDC :: distinct rawptr
+	HGLRC :: distinct rawptr
 	LUID   :: struct {
 		LowPart:  DWORD,
 		HighPart: LONG,
 	}
-        IUnknown :: distinct rawptr
+	IUnknown :: distinct rawptr
 
-        D3D_FEATURE_LEVEL :: c.int
-        
-        ID3D11Device :: distinct rawptr
-        ID3D11Texture2D :: distinct rawptr
-        
-        ID3D12Device :: distinct rawptr
-        ID3D12CommandQueue :: distinct rawptr
-        ID3D12Resource :: distinct rawptr
+	D3D_FEATURE_LEVEL :: c.int
+
+	ID3D11Device :: distinct rawptr
+	ID3D11Texture2D :: distinct rawptr
+
+	ID3D12Device :: distinct rawptr
+	ID3D12CommandQueue :: distinct rawptr
+	ID3D12Resource :: distinct rawptr
 }
 
 `
@@ -1221,6 +1279,7 @@ when ODIN_OS == .Windows {
 PROC_OS_TYPES :: `
 import "core:c"
 import "core:c/libc"
+import win32 "core:sys/windows"
 
 // Vulkan Types
 import vk "vendor:vulkan"
@@ -1230,10 +1289,9 @@ wchar_t :: libc.wchar_t
 jobject :: rawptr
 
 when ODIN_OS == .Windows {
-	import win32 "core:sys/windows"
-        LARGE_INTEGER :: win32.LARGE_INTEGER
+	LARGE_INTEGER :: win32.LARGE_INTEGER
 } else {
-        LARGE_INTEGER :: distinct distinct c.longlong
+	LARGE_INTEGER :: distinct distinct c.longlong
 }
 
 `
@@ -1281,8 +1339,10 @@ load_instance_procs :: proc(instance: Instance) {
 `
 
 CORE_HELPERS :: `
+import "core:c"
+
 // Version Helpers
-CURRENT_API_VERSION :: (1<<48) | (0<<12) | (32)
+CURRENT_API_VERSION :: (1<<48) | (1<<32) | (60)
 MAKE_VERSION :: proc(major, minor, patch: u64) -> u64 {
     return (major<<48) | (minor<<32) | (patch)
 }
@@ -1294,6 +1354,12 @@ Flags64         :: distinct u64
 Time            :: i64
 Duration        :: i64
 Version         :: u64
+SpaceUserIdFB   :: distinct u64
+FutureEXT       :: distinct u64
+
+// Registry support types
+MLCoordinateFrameUID :: distinct rawptr
+AIBinder             :: struct {}
 
 // Atom Types
 Path                    :: distinct Atom
@@ -1301,6 +1367,16 @@ SystemId                :: distinct Atom
 ControllerModelKeyMSFT  :: distinct Atom
 AsyncRequestIdFB        :: distinct Atom
 RenderModelKeyFB        :: distinct Atom
+RenderModelIdEXT        :: distinct Atom
+TrackableANDROID        :: distinct Atom
+MarkerML                :: distinct Atom
+SpatialEntityIdEXT      :: distinct Atom
+SpatialBufferIdEXT      :: distinct Atom
+SpatialEntityIdBD       :: distinct Atom
+
+// Registry constants required by extension structs
+API_LAYER_MAX_SETTINGS_PATH_SIZE :: 512
+EYE_POSITION_COUNT_FB            :: 2
 
 // Helper function for generating fixed buffer strings
 make_string :: proc(str: string, $n: int) -> [n]u8 {
@@ -1312,6 +1388,11 @@ make_string :: proc(str: string, $n: int) -> [n]u8 {
 // Function pointer types
 ProcSetProcAddress :: #type proc "c" (p: rawptr, name: cstring)
 ProcVoidFunction :: #type proc "c" () -> rawptr
+ProcGetInstanceProcAddr :: #type proc "system" (
+	instance: Instance,
+	name: cstring,
+	function: ^ProcVoidFunction,
+) -> Result
 ProcDebugUtilsMessengerCallbackEXT :: #type proc "c" (
 	messageSeverity: DebugUtilsMessageSeverityFlagsEXT,
 	messageTypes: DebugUtilsMessageTypeFlagsEXT,

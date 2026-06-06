@@ -7,8 +7,10 @@ clone_at_revision() {
     local revision="$2"
     local remote="$3"
     shift 3
-    [ -d "$dir" ] && return
-    git clone "$@" "$remote" "$dir"
+    if [ ! -d "$dir" ]; then
+        git clone "$@" "$remote" "$dir"
+    fi
+    git -C "$dir" fetch --tags origin
     if ! git -C "$dir" checkout --detach "$revision"; then
         git -C "$dir" fetch origin "$revision"
         git -C "$dir" checkout --detach FETCH_HEAD
@@ -18,7 +20,7 @@ clone_at_revision() {
     fi
 }
 
-clone_at_revision OpenXR-SDK c15d38cb4bb10a5b7e075f74493ff13896e2597a https://github.com/KhronosGroup/OpenXR-SDK.git
+clone_at_revision OpenXR-SDK 64f2b37c8c6da3d83c9b4d11865ba1fb752cb8ec https://github.com/KhronosGroup/OpenXR-SDK.git
 
 linux_arch_dir() {
     case "$(uname -m)" in
