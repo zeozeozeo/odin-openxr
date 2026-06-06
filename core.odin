@@ -1,7 +1,5 @@
 package openxr
 
-import "core:c"
-
 // Version Helpers
 CURRENT_API_VERSION :: (1<<48) | (1<<32) | (60)
 MAKE_VERSION :: proc(major, minor, patch: u64) -> u64 {

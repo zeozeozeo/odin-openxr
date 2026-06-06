@@ -1,7 +1,6 @@
 package openxr
 
 
-import "core:c"
 import "core:c/libc"
 import win32 "core:sys/windows"
 
@@ -15,7 +14,7 @@ jobject :: rawptr
 when ODIN_OS == .Windows {
 	LARGE_INTEGER :: win32.LARGE_INTEGER
 } else {
-	LARGE_INTEGER :: distinct distinct c.longlong
+	LARGE_INTEGER :: distinct distinct i64
 }
 
 ProcNegotiateLoaderRuntimeInterface :: #type proc "system" (

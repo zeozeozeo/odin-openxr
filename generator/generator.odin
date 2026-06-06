@@ -1277,7 +1277,6 @@ when ODIN_OS == .Windows {
 `
 
 PROC_OS_TYPES :: `
-import "core:c"
 import "core:c/libc"
 import win32 "core:sys/windows"
 
@@ -1291,7 +1290,7 @@ jobject :: rawptr
 when ODIN_OS == .Windows {
 	LARGE_INTEGER :: win32.LARGE_INTEGER
 } else {
-	LARGE_INTEGER :: distinct distinct c.longlong
+	LARGE_INTEGER :: distinct distinct i64
 }
 
 `
@@ -1299,6 +1298,7 @@ when ODIN_OS == .Windows {
 LOADER_LINKS :: `
 when ODIN_OS == .Windows {
     foreign import openxr_loader "openxr_loader.lib"
+    @(require) foreign import "system:Advapi32.lib"
 } else when ODIN_OS == .Darwin {
     foreign import openxr_loader "libopenxr_loader.dylib"
 } else when ODIN_OS == .Linux {
@@ -1339,8 +1339,6 @@ load_instance_procs :: proc(instance: Instance) {
 `
 
 CORE_HELPERS :: `
-import "core:c"
-
 // Version Helpers
 CURRENT_API_VERSION :: (1<<48) | (1<<32) | (60)
 MAKE_VERSION :: proc(major, minor, patch: u64) -> u64 {
