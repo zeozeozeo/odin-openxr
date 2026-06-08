@@ -2,17 +2,29 @@ package openxr
 
 
 when ODIN_OS == .Windows {
-    foreign import openxr_loader "openxr_loader.lib"
+    when ODIN_ARCH == .amd64 {
+        foreign import openxr_loader "windows_x64/openxr_loader.lib"
+    } else when ODIN_ARCH == .arm64 {
+        foreign import openxr_loader "windows_arm64/openxr_loader.lib"
+    } else {
+        #panic("xr supports only windows amd64/arm64")
+    }
     @(require) foreign import "system:Advapi32.lib"
 } else when ODIN_OS == .Darwin {
-    foreign import openxr_loader "libopenxr_loader.dylib"
+    when ODIN_ARCH == .amd64 {
+        foreign import openxr_loader "macos_x64/libopenxr_loader.dylib"
+    } else when ODIN_ARCH == .arm64 {
+        foreign import openxr_loader "macos_arm64/libopenxr_loader.dylib"
+    } else {
+        #panic("xr supports only darwin amd64/arm64")
+    }
 } else when ODIN_OS == .Linux {
     when ODIN_ARCH == .amd64 {
         foreign import openxr_loader "linux_x64/libopenxr_loader.so"
     } else when ODIN_ARCH == .arm64 {
         foreign import openxr_loader "linux_arm64/libopenxr_loader.so"
     } else {
-        #panic("vendor/xr supports only linux amd64/arm64")
+        #panic("xr supports only linux amd64/arm64")
     }
 }
 // Link just the proc address loader
@@ -1030,4 +1042,3 @@ load_instance_procs :: proc(instance: Instance) {
 	GetInstanceProcAddr(instance, "xrHapticParametricGetPropertiesEXT", &out_function)
 	HapticParametricGetPropertiesEXT = auto_cast out_function
 }
-

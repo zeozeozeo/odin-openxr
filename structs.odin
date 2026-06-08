@@ -5460,4 +5460,3 @@ SystemHapticParametricPropertiesEXT :: struct {
 	next: rawptr,
 	supportsParametricHaptics: b32,
 }
-

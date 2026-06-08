@@ -1,39 +1,25 @@
-# OpenXR Odin Bindings
+# odin-openxr
 
-This is an odin script to generate OpenXR bindings from the OpenXR xml registry. The generator
-is in a single file `generator.odin`, and generates a set of bindings into the directory `openxr`.
-The style of the bindings is intended to follow that of `vendor:vulkan`, since that's taken to be
-the canonical example of "Khronos API bindings in Odin".
+OpenXR bindings for Odin, forked over from `catermujo/odin-openxr` and `cshenton/openxr_odin`.
 
-There were some old OpenXR bindings kicking around but they changed all the procs to snake case,
-and didn't handle function pointer loading correctly at all, so I decided to make my own from scratch.
-If these prove stable, the goal is eventually to PR these into `vendor`.
+> [!NOTE]
+> Currently targeting OpenXR SDK `1.1.60`.
 
-I have vendored a prebuilt copy of the `openxr_loader.lib` for windows. If you want to use these
-bindings on windows, it should be enough for you to simply copy that folder into your project and
-invoke the appropriate import statement in your odin source file.
+## Usage
+
+Copy this repository into your Odin project and import it as a package:
 
 ```odin
 import xr "openxr"
 ```
 
-## Loading Functions
+The only statically linked OpenXR symbol is `xrGetInstanceProcAddr`. All other functions are loaded
+through the generated helpers:
 
-The only statically linked symbol is `xrGetInstanceProcAddr`, everything else must be dynamically loaded.
-I provide two helpers, `xr.load_base_procs` which will load:
+- `xr.load_base_procs()` loads the instance creation and enumeration functions.
+- `xr.load_instance_procs(instance)` loads instance-level and extension functions.
 
-- `xrCreateInstance`
-- `xrEnumerateApiLayerProperties`
-- `xrEnumerateInstanceExtensionProperties`
-
-and `xr.load_instance_procs` which takes an instance and will attempt to load every other function pointer,
-including any from requested extensions. If you do not request an extension and proceed to attempt to call
-a procedure from that extension, you will likely dereference a null pointer and crash.
-
-I also provide an odin helper `xr.make_string`, which can be used to create inline string buffers that are
-used in the API. Example usage is provided below.
-
-Example init code might look like:
+Minimal instance setup:
 
 ```odin
 package xr_example
@@ -41,40 +27,118 @@ package xr_example
 import xr "openxr"
 
 main :: proc() {
-	// Load base procedures
 	xr.load_base_procs()
 
-	// Create OpenXR Instance
-	application_info := xr.ApplicationInfo {
-		apiVersion         = xr.MAKE_VERSION(1, 0, 25),
-		applicationName    = xr.make_string("Example Application", 128),
+	app_info := xr.ApplicationInfo {
+		applicationName    = xr.make_string("Example Application", xr.MAX_APPLICATION_NAME_SIZE),
 		applicationVersion = 1,
-		engineName         = xr.make_string("Example Engine", 128),
+		engineName         = xr.make_string("Example Engine", xr.MAX_ENGINE_NAME_SIZE),
 		engineVersion      = 1,
+		apiVersion         = xr.CURRENT_API_VERSION,
 	}
-	instance_info := xr.InstanceCreateInfo {
+
+	create_info := xr.InstanceCreateInfo {
 		sType           = .INSTANCE_CREATE_INFO,
-		applicationInfo = application_info,
+		applicationInfo = app_info,
 	}
 
 	instance: xr.Instance
-	err := xr.CreateInstance(&instance_info, &instance)
-	if err != .SUCCESS {
-		panic("failed to create XR instance")
+	result := xr.CreateInstance(&create_info, &instance)
+	if result != .SUCCESS {
+		panic("xrCreateInstance failed")
 	}
 	defer xr.DestroyInstance(instance)
 
-	// Load instance procedures
 	xr.load_instance_procs(instance)
 
-	// Continue setting up OpenXR
-	// ...
+	// Continue...
 }
 ```
 
-## Completeness
+## Loader binaries
 
-These bindings are not complete. Specifically, I do not generate the following structs:
+Vendored loader binaries are stored by target:
+
+- `windows_x64/openxr_loader.lib`
+- `windows_arm64/openxr_loader.lib`
+- `linux_x64/libopenxr_loader.so`
+- `linux_arm64/libopenxr_loader.so`
+- `macos_x64/libopenxr_loader.dylib`
+- `macos_arm64/libopenxr_loader.dylib`
+
+On Windows, the bindings will additionally link against `Advapi32.lib`.
+
+## Building loader binaries
+
+You will need Python installed for this.
+
+List supported targets:
+
+```sh
+python build.py --list-targets
+```
+
+Build all targets supported from the current host:
+
+```sh
+python build.py --all
+```
+
+Build specific targets:
+
+```sh
+python build.py windows_x64 windows_arm64
+python build.py linux_x64 linux_arm64
+python build.py macos_x64 macos_arm64
+```
+
+On Windows, use `build.bat` to automatically detect a Python installation:
+
+```bat
+build.bat --all
+build.bat macos_arm64
+```
+
+On Linux/MacOS, use `build.sh`:
+
+```sh
+./build.sh --all
+./build.sh macos_arm64
+```
+
+### Host behavior
+
+On Windows:
+
+- Windows targets are built with the latest Visual Studio generator CMake can find.
+- Linux and macOS targets are cross-compiled with Zig.
+- `zig` must be available on `PATH` for Unix cross targets.
+
+On Linux and macOS:
+
+- Running `python build.py` with no target builds the native host target.
+- Passing an explicit non-native Unix target uses Zig for cross-compilation.
+- Windows targets require a Windows host with Visual Studio C++ tools.
+
+## Regenerating bindings
+
+The generator is in `generator/generator.odin`. It reads `xr.xml` and emits:
+
+- `core.odin`
+- `enums.odin`
+- `structs.odin`
+- `procedures.odin`
+- `loader.odin`
+
+`xr.xml` comes from the Khronos OpenXR registry and has been edited so Odin's `core:encoding/xml`
+parser can read it.
+
+> TODO: Patch `xr.xml` automatically?
+
+## Known limitations
+
+Some platform-specific OpenXR structs are intentionally not generated because Odin core packages do
+not provide the required native window-system types:
 
 - `XrGraphicsBindingOpenGLXlibKHR`
 - `XrGraphicsBindingOpenGLXcbKHR`
@@ -82,28 +146,9 @@ These bindings are not complete. Specifically, I do not generate the following s
 - `XrGraphicsBindingOpenGLESAndroidKHR`
 - `XrGraphicsBindingEGLMNDX`
 
-Because the odin `core` packages do not have the required types and I didn't want to be opinionated about these
-platforms. `D3D11`, `D3D12` and `Vulkan` graphics bindings structs are generated, so you can still target Linux,
-just not on OpenGL (and you'll need to BYO `libopenxr_loader.so.1`)
+D3D11, D3D12, Vulkan, and Metal-related bindings are generated where the registry and available Odin
+types allow it.
 
-## Stability
-
-These bindings are not guaranteed correct nor stable. I have just gotten the generator working end to
-end and have no idea where I've made any errors. I will be using them to write my own OpenXR driver code
-and will be able to give a more confident estimate of their correctness once I've used them.
-
-You're welcome to use them, but don't expect them to be fully correct.
-
-## Hand Edits
-
-To ensure `xr.xml` (retrieved from https://github.com/KhronosGroup/OpenXR-SDK/blob/main/specification/registry/xr.xml)
-can be parsed by `core:encoding/xml`, then following hand edits were made:
-
-1. Lines 2-4 inclusive were commented out
-2. Elements with attribute values multiple lines (typically long descriptions) were collapsed onto single lines
-
-## OpenXR Loader Binary
-
-The binaries generated by `vcpkg` / `OpenXR-SDK` cmake have issues relating to linking of CRT etc. which make
-them unsuitable for linking into an odin binary. The one vendored here is loosely based off the vcpkg patch at
-https://github.com/LibreVR/Revive/blob/master/fix-vcpkg-openxr-static-loader.patch.
+These bindings are generated and should be treated as low-level API bindings. Extension procedures
+are loaded by `xr.load_instance_procs`, but calling an extension procedure without enabling and
+validating the corresponding extension can still crash like any other null function pointer call.
